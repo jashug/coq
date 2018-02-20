@@ -175,13 +175,19 @@ let empty_internalization_env = Id.Map.empty
 
 let compute_explicitable_implicit imps = function
   | Inductive (params,_) ->
-      (* In inductive types, the parameters are fixed implicit arguments *)
-      let sub_impl,_ = List.chop (List.length params) imps in
-      let sub_impl' = List.filter is_status_implicit sub_impl in
-      List.map name_of_implicit sub_impl'
+     (* In inductive types, the parameters are fixed implicit arguments *)
+     let sub_impl,_ = List.chop (List.length params) imps in
+     let rec aux = function
+       | [] -> []
+       | imp::rest when is_status_implicit imp ->
+          (match name_of_implicit imp with
+           | Name id -> id::aux rest
+           | Anonymous -> aux rest)
+       | _::rest -> aux rest in
+     aux sub_impl
   | Recursive | Method | Variable ->
-      (* Unable to know in advance what the implicit arguments will be *)
-      []
+     (* Unable to know in advance what the implicit arguments will be *)
+     []
 
 let compute_internalization_data env ty typ impl =
   let impl = compute_implicits_with_manual env typ (is_implicit_args()) impl in
@@ -315,9 +321,7 @@ let rec it_mkGLambda ?loc env body =
 (**********************************************************************)
 (* Utilities for binders                                              *)
 let build_impls = function
-  |Implicit -> (function
-		  |Name id ->  Some (id, Impargs.Manual, (true,true))
-		  |Anonymous -> Some (Id.of_string "_", Impargs.Manual, (true,true)))
+  |Implicit -> fun na -> Some (na, Impargs.Manual, (true,true))
   |Explicit -> fun _ -> None
 
 let impls_type_list ?(args = []) =
@@ -1561,7 +1565,7 @@ let merge_impargs l args =
     l args
 
 let get_implicit_name n imps =
-  Some (Impargs.name_of_implicit (List.nth imps (n-1)))
+  Impargs.name_of_implicit (List.nth imps (n-1))
 
 let set_hole_implicit i b c =
   let loc = c.CAst.loc in
@@ -1577,41 +1581,45 @@ let set_hole_implicit i b c =
   | GVar id -> Loc.tag ?loc (Evar_kinds.ImplicitArg (VarRef id,i,b),Misctypes.IntroAnonymous,None)
   | _ -> anomaly (Pp.str "Only refs have implicits.")
 
-let exists_implicit_name id =
-  List.exists (fun imp -> is_status_implicit imp && Id.equal id (name_of_implicit imp))
+let find_implicit_name id imps =
+  let rec aux n = function
+    | [] -> None
+    | imp::_ when is_status_implicit imp && Name.equal (Name id) (name_of_implicit imp) ->
+       Some n
+    | _::rest -> aux (n+1) rest
+  in aux 1 imps
 
 let extract_explicit_arg imps args =
   let rec aux = function
-  | [] -> Id.Map.empty, []
-  | (a,e)::l ->
-      let (eargs,rargs) = aux l in
-      match e with
-      | None -> (eargs,a::rargs)
-      | Some (loc,pos) ->
-	  let id = match pos with
-	  | ExplByName id ->
-	      if not (exists_implicit_name id imps) then
-		user_err ?loc 
-		  (str "Wrong argument name: " ++ Id.print id ++ str ".");
-	      if Id.Map.mem id eargs then
-		user_err ?loc  (str "Argument name " ++ Id.print id
-		++ str " occurs more than once.");
-	      id
-	  | ExplByPos (p,_id) ->
-	      let id =
-		try
-		  let imp = List.nth imps (p-1) in
-		  if not (is_status_implicit imp) then failwith "imp";
-		  name_of_implicit imp
-		with Failure _ (* "nth" | "imp" *) ->
-		  user_err ?loc 
-		    (str"Wrong argument position: " ++ int p ++ str ".")
-	      in
-	      if Id.Map.mem id eargs then
-		user_err ?loc  (str"Argument at position " ++ int p ++
-		  str " is mentioned more than once.");
-	      id in
-	  (Id.Map.add id (loc, a) eargs, rargs)
+    | [] -> Int.Map.empty, []
+    | (a,e)::l ->
+       let (eargs,rargs) = aux l in
+       match e with
+       | None -> (eargs,a::rargs)
+       | Some (loc,pos) ->
+          let p = match pos with
+            | ExplByName id ->
+               (match find_implicit_name id imps with
+                | Some p -> p
+                | None -> user_err ?loc
+                            (str "Wrong argument name: " ++ Id.print id ++ str "."))
+            | ExplByPos (p,_id) ->
+               try
+                 let imp = List.nth imps (p-1) in
+                 if not (is_status_implicit imp) then failwith "imp";
+                 p
+               with Failure _ (* "nth" | "imp" *) ->
+                 user_err ?loc
+                   (str"Wrong argument position: " ++ int p ++ str ".")
+          in
+          if Int.Map.mem p eargs then
+            user_err ?loc
+              (str"Argument at position " ++ int p
+               ++ (match get_implicit_name p imps with
+                   | Name id -> str" (name " ++ Id.print id ++ str") "
+                   | Anonymous -> str" ")
+               ++ str"is mentioned more than once.");
+          (Int.Map.add p (loc, a) eargs, rargs)
   in aux args
 
 (**********************************************************************)
@@ -1990,41 +1998,46 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
   and intern_impargs c env l subscopes args =
     let eargs, rargs = extract_explicit_arg l args in
     if !parsing_explicit then
-      if Id.Map.is_empty eargs then intern_args env subscopes rargs
+      if Int.Map.is_empty eargs then intern_args env subscopes rargs
       else user_err Pp.(str "Arguments given by name or position not supported in explicit mode.")
     else
-    let rec aux n impl subscopes eargs rargs =
-      let (enva,subscopes') = apply_scope_env env subscopes in
-      match (impl,rargs) with
-      | (imp::impl', rargs) when is_status_implicit imp ->
-	  begin try
-	    let id = name_of_implicit imp in
-	    let (_,a) = Id.Map.find id eargs in
-	    let eargs' = Id.Map.remove id eargs in
-	    intern enva a :: aux (n+1) impl' subscopes' eargs' rargs
-	  with Not_found ->
-	  if List.is_empty rargs && Id.Map.is_empty eargs && not (maximal_insertion_of imp) then
-            (* Less regular arguments than expected: complete *)
-            (* with implicit arguments if maximal insertion is set *)
-	    []
-	  else
-              (DAst.map_from_loc (fun ?loc (a,b,c) -> GHole(a,b,c))
-                (set_hole_implicit (n,get_implicit_name n l) (force_inference_of imp) c)
-              ) :: aux (n+1) impl' subscopes' eargs rargs
-	  end
-      | (imp::impl', a::rargs') ->
-	  intern enva a :: aux (n+1) impl' subscopes' eargs rargs'
-      | (imp::impl', []) ->
-	  if not (Id.Map.is_empty eargs) then
-	    (let (id,(loc,_)) = Id.Map.choose eargs in
-	       user_err ?loc  (str "Not enough non implicit \
-	    arguments to accept the argument bound to " ++
-		 Id.print id ++ str"."));
-	  []
-      | ([], rargs) ->
-	  assert (Id.Map.is_empty eargs);
-	  intern_args env subscopes rargs
-    in aux 1 l subscopes eargs rargs
+      let rec aux n impl subscopes eargs rargs =
+        let (enva,subscopes') = apply_scope_env env subscopes in
+        match (impl,rargs) with
+        | (imp::impl', rargs) when is_status_implicit imp ->
+           begin try
+               let (_,a) = Int.Map.find n eargs in
+               let eargs' = Int.Map.remove n eargs in
+               intern enva a :: aux (n+1) impl' subscopes' eargs' rargs
+             with Not_found ->
+               if List.is_empty rargs && Int.Map.is_empty eargs && not (maximal_insertion_of imp) then
+                 (* Less regular arguments than expected: complete *)
+                 (* with implicit arguments if maximal insertion is set *)
+                 []
+               else
+                 let id = match name_of_implicit imp with Name id -> Some id | _ -> None in
+                 (DAst.map_from_loc (fun ?loc (a,b,c) -> GHole(a,b,c))
+                    (set_hole_implicit (n,id) (force_inference_of imp) c)
+                 ) :: aux (n+1) impl' subscopes' eargs rargs
+           end
+        | (imp::impl', a::rargs') ->
+           assert (not (Int.Map.mem n eargs));
+           intern enva a :: aux (n+1) impl' subscopes' eargs rargs'
+        | (imp::impl', []) ->
+           if not (Int.Map.is_empty eargs) then
+             (let (p,(loc,_)) = Int.Map.choose eargs in
+              assert (p > n);
+              user_err ?loc  (str "Not enough non implicit \
+                                   arguments to accept the argument bound to position "
+                              ++ int p
+                              ++ (match get_implicit_name p l with
+                                  | Name id -> str" (name " ++ Id.print id ++ str")."
+                                  | Anonymous -> str".")));
+           []
+        | ([], rargs) ->
+           assert (Int.Map.is_empty eargs);
+           intern_args env subscopes rargs
+      in aux 1 l subscopes eargs rargs
 
   and apply_impargs c env imp subscopes l loc =
     let l : (Constrexpr.constr_expr * Constrexpr.explicitation Loc.located option) list = l in

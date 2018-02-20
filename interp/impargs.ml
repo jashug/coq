@@ -279,7 +279,7 @@ type force_inference = bool (* true = always infer, never turn into evar/subgoal
 
 type implicit_status =
     (* None = Not implicit *)
-    (Id.t * implicit_explanation * (maximal_insertion * force_inference)) option
+    (Name.t * implicit_explanation * (maximal_insertion * force_inference)) option
 
 type implicit_side_condition = DefaultImpArgs | LessArgsThan of int
 
@@ -325,15 +325,16 @@ let rec prepare_implicits f = function
   | [] -> []
   | (Anonymous, Some _)::_ -> anomaly (Pp.str "Unnamed implicit.")
   | (Name id, Some imp)::imps ->
-      let imps' = prepare_implicits f imps in
-      Some (id,imp,(set_maximality imps' f.maximal,true)) :: imps'
+     let imps' = prepare_implicits f imps in
+     Some (Name id,imp,(set_maximality imps' f.maximal,true)) :: imps'
   | _::imps -> None :: prepare_implicits f imps
 
 let set_implicit id imp insmax =
   (id,(match imp with None -> Manual | Some imp -> imp),insmax)
 
 let rec assoc_by_pos k = function
-    (ExplByPos (k', x), b) :: tl when Int.equal k k' -> (x,b), tl
+  | (ExplByPos (k', na), b) :: tl when Int.equal k k' ->
+     (Option.cata (fun id -> Name id) Anonymous na,b), tl
   | hd :: tl -> let (x, tl) = assoc_by_pos k tl in x, hd :: tl
   | [] -> raise Not_found
 
@@ -356,10 +357,8 @@ let set_manual_implicits env flags enriching autoimps l =
   let try_forced k l =
     try
       let (id, (b, fi, fo)), l' = assoc_by_pos k l in
-	if fo then
-	  let id = match id with Some id -> id | None -> Id.of_string ("arg_" ^ string_of_int k) in
-	    l', Some (id,Manual,(b,fi))
-	else l, None
+      if fo then l', Some (id,Manual,(b,fi))
+      else l, None
     with Not_found -> l, None
   in
   if not (List.distinct l) then
@@ -387,7 +386,7 @@ let set_manual_implicits env flags enriching autoimps l =
       let m = Option.map (fun (b,f) -> 
 	(* match imp with Some Manual -> (b,f) *)
 	(* | _ ->  *)set_maximality imps' b, f) m in
-      Option.map (set_implicit id imp) m :: imps'
+      Option.map (set_implicit (Name id) imp) m :: imps'
   | (Anonymous,imp)::imps ->
       let l', forced = try_forced k l in
 	forced :: merge (k+1) l' imps
@@ -498,7 +497,7 @@ let implicits_of_global ref =
         | [], _ -> []
         | _, [] -> implicits
         | Some (_, x,y) :: implicits, Name id :: names ->
-           Some (id, x,y) :: rename implicits names
+           Some (Name id, x,y) :: rename implicits names
         | imp :: implicits, _ :: names -> imp :: rename implicits names
       in
       List.map (fun (t, il) -> t, rename il rename_l) l
@@ -521,7 +520,7 @@ let subst_implicits (subst,(req,l)) =
 
 let impls_of_context ctx =
   let map (decl, impl) = match impl with
-  | Implicit -> Some (NamedDecl.get_id decl, Manual, (true, true))
+  | Implicit -> Some (Name (NamedDecl.get_id decl), Manual, (true, true))
   | _ -> None
   in
   List.rev_map map (List.filter (fst %> is_local_assum) ctx)

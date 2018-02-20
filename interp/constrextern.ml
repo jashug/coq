@@ -569,7 +569,9 @@ let explicitize inctx impl (cf,f) args =
 	   is_significant_implicit (Lazy.force a))
 	in
         if visible then
-	  (Lazy.force a,Some (Loc.tag @@ ExplByName (name_of_implicit imp))) :: tail
+          match name_of_implicit imp with
+          | Name id -> (Lazy.force a,Some (Loc.tag @@ ExplByName id)) :: tail
+          | Anonymous -> (Lazy.force a,Some (Loc.tag @@ ExplByPos (q,None))) :: tail
 	else
 	  tail
     | a::args, _::impl -> (Lazy.force a,None) :: exprec (q+1) (args,impl)
