@@ -28,7 +28,6 @@ type node =
   | OpenedModule of is_type * export * object_prefix * Summary.frozen
   | ClosedModule  of library_segment
   | OpenedSection of object_prefix * Summary.frozen
-  | ClosedSection of library_segment
 
 and library_entry = object_name * node
 
@@ -73,7 +72,6 @@ let classify_segment seg =
 		 clean ((id,o')::substl, keepl, anticipl) stk
 	     | Anticipate o' ->
 		 clean (substl, keepl, o'::anticipl) stk)
-    | (_,ClosedSection _) :: stk -> clean acc stk
     (* LEM; TODO: Understand what this does and see if what I do is the
                   correct thing for ClosedMod(ule|type) *)
     | (_,ClosedModule _) :: stk -> clean acc stk
@@ -548,14 +546,13 @@ let open_section id =
   add_section ()
 
 
-(* Restore lib_stk and summaries as before the section opening, and
-   add a ClosedSection object. *)
+(* Restore lib_stk and summaries as before the section opening. *)
 
 let discharge_item ((sp,_ as oname),e) =
   match e with
   | Leaf lobj ->
       Option.map (fun o -> (basename sp,o)) (discharge_object (oname,lobj))
-  | ClosedSection _ | ClosedModule _ -> None
+  | ClosedModule _ -> None
   | OpenedSection _ | OpenedModule _ | CompilingLibrary _ ->
       anomaly (Pp.str "discharge_item.")
 
@@ -570,7 +567,6 @@ let close_section () =
   let (secdecls,mark,before) = split_lib_at_opening oname in
   lib_state := { !lib_state with lib_stk = before };
   pop_path_prefix ();
-  add_entry oname (ClosedSection (List.rev (mark::secdecls)));
   let newdecls = List.map discharge_item secdecls in
   Summary.unfreeze_summaries fs;
   List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls
@@ -591,8 +587,7 @@ let freeze ~marshallable =
                Some(n,OpenedModule(it,e,op,Summary.empty_frozen))
         | n, ClosedModule _ -> Some (n,ClosedModule [])
         | n, OpenedSection (op, _) ->
-               Some(n,OpenedSection(op,Summary.empty_frozen))
-        | n, ClosedSection _ -> Some (n,ClosedSection []))
+               Some(n,OpenedSection(op,Summary.empty_frozen)))
       !lib_state.lib_stk in
     { !lib_state with lib_stk }
   | _ ->
