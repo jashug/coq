@@ -376,16 +376,6 @@ module KerName = struct
 
   type kernel_name = t
 
-  let make modpath dirpath knlabel =
-    { modpath; dirpath; knlabel; refhash = -1; canary; }
-  let repr kn = (kn.modpath, kn.dirpath, kn.knlabel)
-
-  let make2 modpath knlabel =
-    { modpath; dirpath = DirPath.empty; knlabel; refhash = -1; canary; }
-
-  let modpath kn = kn.modpath
-  let label kn = kn.knlabel
-
   let to_string_gen mp_to_string kn =
     let dp =
       if DirPath.is_empty kn.dirpath then "."
@@ -398,6 +388,18 @@ module KerName = struct
   let debug_to_string kn = to_string_gen ModPath.debug_to_string kn
 
   let print kn = str (to_string kn)
+
+  let make modpath dirpath knlabel =
+    let res = { modpath; dirpath; knlabel; refhash = -1; canary; } in
+    if not (DirPath.is_empty dirpath) then CErrors.anomaly Pp.(str (debug_to_string res));
+    res
+  let repr kn = (kn.modpath, kn.dirpath, kn.knlabel)
+
+  let make2 modpath knlabel =
+    { modpath; dirpath = DirPath.empty; knlabel; refhash = -1; canary; }
+
+  let modpath kn = kn.modpath
+  let label kn = kn.knlabel
 
   let compare (kn1 : kernel_name) (kn2 : kernel_name) =
     if kn1 == kn2 then 0

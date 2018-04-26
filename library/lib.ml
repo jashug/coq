@@ -89,28 +89,26 @@ let segment_of_objects prefix =
   List.map (fun (id,obj) -> (make_oname prefix id, Leaf obj))
 
 (* We keep trace of operations in the stack [lib_stk].
-   [path_prefix] is the current path of sections, where sections are stored in
-   ``correct'' order, the oldest coming first in the list. It may seems
-   costly, but in practice there is not so many openings and closings of
-   sections, but on the contrary there are many constructions of section
-   paths based on the library path. *)
+   [path_prefix] is the current path of modules, and
+   sections is a list of open sections with deepest first. *)
 
 let initial_prefix = {
   obj_dir = default_library;
   obj_mp  = ModPath.initial;
-  obj_sec = DirPath.empty;
 }
 
 type lib_state = {
   comp_name   : DirPath.t option;
   lib_stk     : library_segment;
   path_prefix : object_prefix;
+  sections    : Name.t list;
 }
 
 let initial_lib_state = {
   comp_name   = None;
   lib_stk     = [];
   path_prefix = initial_prefix;
+  sections    = [];
 }
 
 let lib_state = ref initial_lib_state
@@ -123,17 +121,15 @@ let library_dp () =
 
 let cwd () = !lib_state.path_prefix.obj_dir
 let current_mp () = !lib_state.path_prefix.obj_mp
-let current_sections () = !lib_state.path_prefix.obj_sec
+let current_sections () = !lib_state.sections
 
-let sections_depth () = List.length (Names.DirPath.repr (current_sections ()))
-let sections_are_opened () = not (Names.DirPath.is_empty (current_sections ()))
+let sections_depth () = List.length (current_sections ())
+let sections_are_opened () = not (List.is_empty (current_sections ()))
 
-let cwd_except_section () =
-  Libnames.pop_dirpath_n (sections_depth ()) (cwd ())
+let cwd_except_section () = cwd ()
 
 let current_dirpath sec =
-  Libnames.drop_dirpath_prefix (library_dp ())
-    (if sec then cwd () else cwd_except_section ())
+  Libnames.drop_dirpath_prefix (library_dp ()) (cwd())
 
 let make_path id = Libnames.make_path (cwd ()) id
 
@@ -142,13 +138,12 @@ let make_path_except_section id =
 
 let make_kn id =
   let mp, dir = current_mp (), current_sections () in
-  Names.KerName.make mp dir (Names.Label.of_id id)
+  Names.KerName.make2 mp (Names.Label.of_id id)
 
 let make_oname id = Libnames.make_oname !lib_state.path_prefix id
 
 let recalc_path_prefix () =
   let rec recalc = function
-    | (sp, OpenedSection (dir,_)) :: _ -> dir
     | (sp, OpenedModule (_,_,dir,_)) :: _ -> dir
     | (sp, CompilingLibrary dir) :: _ -> dir
     | _::l -> recalc l
@@ -157,11 +152,7 @@ let recalc_path_prefix () =
   lib_state := { !lib_state with path_prefix = recalc !lib_state.lib_stk }
 
 let pop_path_prefix () =
-  let op = !lib_state.path_prefix in
-  lib_state := { !lib_state
-                 with path_prefix = { op with obj_dir = pop_dirpath op.obj_dir;
-                                              obj_sec = pop_dirpath op.obj_sec;
-                                    } }
+  lib_state := { !lib_state with sections = List.tl !lib_state.sections }
 
 let find_entry_p p =
   let rec find = function
@@ -178,34 +169,14 @@ let find_entries_p p =
   find !lib_state.lib_stk
 
 let split_lib_gen test =
-  let rec collect after equal = function
-    | hd::before when test hd -> collect after (hd::equal) before
-    | before -> after,equal,before
-  in
   let rec findeq after = function
-    | hd :: before ->
-      	if test hd
-	then Some (collect after [hd] before)
-	else (match hd with
-		| (sp,ClosedModule  seg)
-		| (sp,ClosedSection seg) ->
-		    (match findeq after seg with
-		       | None -> findeq (hd::after) before
-		       | Some (sub_after,sub_equal,sub_before) ->
-			   Some (sub_after, sub_equal, (List.append sub_before before)))
-		| _ -> findeq (hd::after) before)
-    | [] -> None
-  in
-    match findeq [] !lib_state.lib_stk with
-      | None -> user_err Pp.(str "no such entry")
-      | Some r -> r
+    | hd :: before when test hd -> after,[hd],before
+    | hd :: before -> findeq (hd::after) before
+    | [] -> user_err Pp.(str "no such entry")
+  in findeq [] !lib_state.lib_stk
 
 let eq_object_name (fp1, kn1) (fp2, kn2) =
   eq_full_path fp1 fp2 && Names.KerName.equal kn1 kn2
-
-let split_lib sp =
-  let is_sp (nsp, _) = eq_object_name sp nsp in
-  split_lib_gen is_sp
 
 let split_lib_at_opening sp =
   let is_sp (nsp, obj) = match obj with
@@ -287,7 +258,7 @@ let current_mod_id () =
 
 let start_mod is_type export id mp fs =
   let dir = add_dirpath_suffix (!lib_state.path_prefix.obj_dir) id in
-  let prefix = { obj_dir = dir; obj_mp = mp; obj_sec = Names.DirPath.empty } in
+  let prefix = { obj_dir = dir; obj_mp = mp } in
   let exists =
     if is_type then Nametab.exists_cci (make_path id)
     else Nametab.exists_module dir
@@ -295,7 +266,8 @@ let start_mod is_type export id mp fs =
   if exists then
     user_err ~hdr:"open_module" (Id.print id ++ str " already exists");
   add_entry (make_oname id) (OpenedModule (is_type,export,prefix,fs));
-  lib_state := { !lib_state with path_prefix = prefix} ;
+  assert (List.is_empty !lib_state.sections);
+  lib_state := { !lib_state with path_prefix = prefix } ;
   prefix
 
 let start_module = start_mod false
@@ -328,20 +300,19 @@ let end_modtype () = end_mod true
 
 let contents () = !lib_state.lib_stk
 
-let contents_after sp = let (after,_,_) = split_lib sp in after
-
 (* Modules. *)
 
 (* TODO: use check_for_module ? *)
 let start_compilation s mp =
   if !lib_state.comp_name != None then
     user_err Pp.(str "compilation unit is already started");
-  if not (Names.DirPath.is_empty (!lib_state.path_prefix.obj_sec)) then
+  if sections_are_opened () then
     user_err Pp.(str "some sections are already opened");
-  let prefix = Libnames.{ obj_dir = s; obj_mp = mp; obj_sec = DirPath.empty } in
+  let prefix = Libnames.{ obj_dir = s; obj_mp = mp } in
   add_anonymous_entry (CompilingLibrary prefix);
   lib_state := { !lib_state with comp_name = Some s;
-                                 path_prefix = prefix }
+                                 path_prefix = prefix;
+                                 sections = [] }
 
 let open_blocks_message es =
   let open_block_name = function
@@ -546,16 +517,9 @@ let is_in_section ref =
 (*************)
 (* Sections. *)
 let open_section id =
-  let opp = !lib_state.path_prefix in
-  let obj_dir = add_dirpath_suffix opp.obj_dir id in
-  let prefix = { obj_dir; obj_mp = opp.obj_mp; obj_sec = add_dirpath_suffix opp.obj_sec id } in
-  if Nametab.exists_section obj_dir then
-    user_err ~hdr:"open_section" (Id.print id ++ str " already exists.");
   let fs = Summary.freeze_summaries ~marshallable:`No in
-  add_entry (make_oname id) (OpenedSection (prefix, fs));
-  (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
-  Nametab.push_dir (Nametab.Until 1) obj_dir (DirOpenSection prefix);
-  lib_state := { !lib_state with path_prefix = prefix };
+  add_entry (make_oname id) (OpenedSection (!lib_state.path_prefix, fs));
+  lib_state := { !lib_state with sections = Name.Name id :: !lib_state.sections };
   add_section ()
 
 
@@ -580,13 +544,11 @@ let close_section () =
   in
   let (secdecls,mark,before) = split_lib_at_opening oname in
   lib_state := { !lib_state with lib_stk = before };
-  let full_olddir = !lib_state.path_prefix.obj_dir in
   pop_path_prefix ();
   add_entry oname (ClosedSection (List.rev (mark::secdecls)));
   let newdecls = List.map discharge_item secdecls in
   Summary.unfreeze_summaries fs;
-  List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls;
-  Nametab.push_dir (Nametab.Until 1) full_olddir (DirClosedSection full_olddir)
+  List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls
 
 (* State and initialization. *)
 
@@ -644,33 +606,15 @@ let library_part = function
 (************************)
 (* Discharging names *)
 
-let con_defined_in_sec kn =
-  let _,dir,_ = Names.Constant.repr3 kn in
-  not (Names.DirPath.is_empty dir) &&
-  Names.DirPath.equal (pop_dirpath dir) (current_sections ())
+(* TODO: deprecate identity *)
 
-let defined_in_sec kn =
-  let _,dir,_ = Names.MutInd.repr3 kn in
-  not (Names.DirPath.is_empty dir) &&
-  Names.DirPath.equal (pop_dirpath dir) (current_sections ())
+let discharge_global r = r
 
-let discharge_global = function
-  | ConstRef kn when con_defined_in_sec kn ->
-      ConstRef (Globnames.pop_con kn)
-  | IndRef (kn,i) when defined_in_sec kn ->
-      IndRef (Globnames.pop_kn kn,i)
-  | ConstructRef ((kn,i),j) when defined_in_sec kn ->
-      ConstructRef ((Globnames.pop_kn kn,i),j)
-  | r -> r
+let discharge_kn kn = kn
 
-let discharge_kn kn =
-  if defined_in_sec kn then Globnames.pop_kn kn else kn
+let discharge_con cst = cst
 
-let discharge_con cst =
-  if con_defined_in_sec cst then Globnames.pop_con cst else cst
-
-let discharge_inductive (kn,i) =
-  (discharge_kn kn,i)
+let discharge_inductive (kn,i) = (kn,i)
 
 let discharge_abstract_universe_context { abstr_subst = subst; abstr_uctx = abs_ctx } auctx =
   let open Univ in

@@ -45,7 +45,7 @@ Universe secfoo.
 Section Foo'.
   Fail Universe secfoo.
   Universe secfoo2.
-  Check Type@{Foo'.secfoo2}.
+  Check Type@{secfoo2}.
   Constraint secfoo2 < a.
 End Foo'.
 

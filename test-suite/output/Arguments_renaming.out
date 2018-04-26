@@ -42,7 +42,7 @@ myrefl : forall (B : Type) (x : A), B -> myEq B x x
 Arguments are renamed to C, x, _
 Argument C is implicit and maximally inserted
 Argument scopes are [type_scope _ _]
-Expands to: Constructor Top.Test1.myrefl
+Expands to: Constructor Top.myrefl
 myplus = 
 fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
   match n with
@@ -62,7 +62,7 @@ Argument scopes are [type_scope _ nat_scope nat_scope]
 The reduction tactics unfold myplus when the 2nd and
   3rd arguments evaluate to a constructor 
 myplus is transparent
-Expands to: Constant Top.Test1.myplus
+Expands to: Constant Top.myplus
 @myplus
      : forall Z : Type, Z -> nat -> nat -> nat
 Inductive myEq (A B : Type) (x : A) : A -> Prop :=

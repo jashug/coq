@@ -81,10 +81,10 @@ Global Arguments register_reassign {_ _ _ _} ctxi ctxr e _.
 Section language5.
   Context (Name : Type).
 
-  Local Notation expr := (@Top.expr Name).
+  Local Notation texpr := (@Top.expr Name).
   Local Notation nexpr := (@Named.expr Name).
 
-  Fixpoint ocompile (e : expr) (ls : list (option Name)) {struct e}
+  Fixpoint ocompile (e : texpr) (ls : list (option Name)) {struct e}
     : option (nexpr)
     := match e in @Top.expr _ return option (nexpr) with
        | Top.Const => Some Named.Const
@@ -96,7 +96,7 @@ Section language5.
             end
        end.
 
-  Definition compile (e : expr) (ls : list Name) := @ocompile e (List.map (@Some _) ls).
+  Definition compile (e : texpr) (ls : list Name) := @ocompile e (List.map (@Some _) ls).
 End language5.
 
 Global Arguments compile {_} e ls.

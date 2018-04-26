@@ -87,10 +87,10 @@ Various checks for coqdoc
 \coqdockw{Section} \coqdef{Coqdoc.links.test}{test}{\coqdocsection{test}}.\coqdoceol
 \coqdocemptyline
 \coqdocindent{2.00em}
-\coqdockw{Variables} \coqdef{Coqdoc.links.test.b'}{b'}{\coqdocvariable{b'}} \coqdef{Coqdoc.links.test.b2}{b2}{\coqdocvariable{b2}}: \coqexternalref{nat}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocinductive{nat}}.\coqdoceol
+\coqdockw{Variables} \coqdef{Coqdoc.links.b'}{b'}{\coqdocvariable{b'}} \coqdef{Coqdoc.links.b2}{b2}{\coqdocvariable{b2}}: \coqexternalref{nat}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocinductive{nat}}.\coqdoceol
 \coqdocemptyline
 \coqdocindent{2.00em}
-\coqdockw{Notation} \coqdef{Coqdoc.links.test.:my scope:x '+' x}{"}{"}n + m" := (\coqdocvar{n} \coqref{Coqdoc.links.::x 'xE2x96xB5' x}{\coqdocnotation{▵}} \coqdocvar{m}) : \coqdocvar{my\_scope}.\coqdoceol
+\coqdockw{Notation} \coqdef{Coqdoc.links.:my scope:x '+' x}{"}{"}n + m" := (\coqdocvar{n} \coqref{Coqdoc.links.::x 'xE2x96xB5' x}{\coqdocnotation{▵}} \coqdocvar{m}) : \coqdocvar{my\_scope}.\coqdoceol
 \coqdocemptyline
 \coqdocindent{2.00em}
 \coqdockw{Delimit} \coqdockw{Scope} \coqdocvar{my\_scope} \coqdockw{with} \coqdocvar{my}.\coqdoceol
@@ -99,7 +99,7 @@ Various checks for coqdoc
 \coqdockw{Notation} \coqdef{Coqdoc.links.l}{l}{\coqdocabbreviation{l}} := 0.\coqdoceol
 \coqdocemptyline
 \coqdocindent{2.00em}
-\coqdockw{Definition} \coqdef{Coqdoc.links.xCExB1}{α}{\coqdocdefinition{α}} := (0 \coqref{Coqdoc.links.test.:my scope:x '+' x}{\coqdocnotation{+}} \coqref{Coqdoc.links.l}{\coqdocabbreviation{l}})\%\coqdocvar{my}.\coqdoceol
+\coqdockw{Definition} \coqdef{Coqdoc.links.xCExB1}{α}{\coqdocdefinition{α}} := (0 \coqref{Coqdoc.links.:my scope:x '+' x}{\coqdocnotation{+}} \coqref{Coqdoc.links.l}{\coqdocabbreviation{l}})\%\coqdocvar{my}.\coqdoceol
 \coqdocemptyline
 \coqdocindent{2.00em}
 \coqdockw{Definition} \coqdef{Coqdoc.links.a'}{a'}{\coqdocdefinition{a'}} \coqdocvar{b} := \coqdocvariable{b'}\coqref{Coqdoc.links.::x '++' x}{\coqdocnotation{++}}0\coqref{Coqdoc.links.::x '++' x}{\coqdocnotation{++}}\coqdocvariable{b2} \coqref{Coqdoc.links.::x ''' ''' '++' 'x' x}{\coqdocnotation{\_}} \coqref{Coqdoc.links.::x ''' ''' '++' 'x' x}{\coqdocnotation{++}}\coqref{Coqdoc.links.::x ''' ''' '++' 'x' x}{\coqdocnotation{x}} \coqdocvariable{b}.\coqdoceol
@@ -116,28 +116,28 @@ Various checks for coqdoc
 \coqdocvar{Admitted}.\coqdoceol
 \coqdocemptyline
 \coqdocindent{1.00em}
-\coqdockw{End} \coqref{Coqdoc.links.test}{\coqdocsection{test}}.\coqdoceol
+\coqdockw{End} \coqref{Coqdoc.links}{\coqdocsection{test}}.\coqdoceol
 \coqdocemptyline
 \coqdocindent{1.00em}
 \coqdockw{Section} \coqdef{Coqdoc.links.test2}{test2}{\coqdocsection{test2}}.\coqdoceol
 \coqdocemptyline
 \coqdocindent{2.00em}
-\coqdockw{Variables} \coqdef{Coqdoc.links.test2.b'}{b'}{\coqdocvariable{b'}}: \coqexternalref{nat}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocinductive{nat}}.\coqdoceol
+\coqdockw{Variables} \coqdef{Coqdoc.links.b'}{b'}{\coqdocvariable{b'}}: \coqexternalref{nat}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocinductive{nat}}.\coqdoceol
 \coqdocemptyline
 \coqdocindent{2.00em}
-\coqdockw{Section} \coqdef{Coqdoc.links.test2.test}{test}{\coqdocsection{test}}.\coqdoceol
+\coqdockw{Section} \coqdef{Coqdoc.links.test}{test}{\coqdocsection{test}}.\coqdoceol
 \coqdocemptyline
 \coqdocindent{3.00em}
-\coqdockw{Variables} \coqdef{Coqdoc.links.test2.test.b2}{b2}{\coqdocvariable{b2}}: \coqexternalref{nat}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocinductive{nat}}.\coqdoceol
+\coqdockw{Variables} \coqdef{Coqdoc.links.b2}{b2}{\coqdocvariable{b2}}: \coqexternalref{nat}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocinductive{nat}}.\coqdoceol
 \coqdocemptyline
 \coqdocindent{3.00em}
 \coqdockw{Definition} \coqdef{Coqdoc.links.a''}{a'{}'}{\coqdocdefinition{a'{}'}} \coqdocvar{b} := \coqdocvariable{b'} \coqref{Coqdoc.links.::x '++' x}{\coqdocnotation{++}} \coqexternalref{O}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocconstructor{O}} \coqref{Coqdoc.links.::x '++' x}{\coqdocnotation{++}} \coqdocvariable{b2} \coqref{Coqdoc.links.::x ''' ''' '++' 'x' x}{\coqdocnotation{\_}} \coqref{Coqdoc.links.::x ''' ''' '++' 'x' x}{\coqdocnotation{++}} \coqref{Coqdoc.links.::x ''' ''' '++' 'x' x}{\coqdocnotation{x}} \coqdocvariable{b} \coqexternalref{:nat scope:x '+' x}{http://coq.inria.fr/stdlib/Coq.Init.Peano}{\coqdocnotation{+}} \coqref{Coqdoc.links.h}{\coqdocabbreviation{h}} 0.\coqdoceol
 \coqdocemptyline
 \coqdocindent{2.00em}
-\coqdockw{End} \coqref{Coqdoc.links.test2.test}{\coqdocsection{test}}.\coqdoceol
+\coqdockw{End} \coqref{Coqdoc.links}{\coqdocsection{test}}.\coqdoceol
 \coqdocemptyline
 \coqdocindent{1.00em}
-\coqdockw{End} \coqref{Coqdoc.links.test2}{\coqdocsection{test2}}.\coqdoceol
+\coqdockw{End} \coqref{Coqdoc.links}{\coqdocsection{test2}}.\coqdoceol
 \coqdocemptyline
 \end{coqdoccode}
 skip 

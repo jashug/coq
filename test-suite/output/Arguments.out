@@ -60,14 +60,14 @@ f : T1 -> T2 -> nat -> unit -> nat -> nat
 
 Argument scopes are [_ _ nat_scope _ nat_scope]
 f is transparent
-Expands to: Constant Top.S1.S2.f
+Expands to: Constant Top.f
 f : T1 -> T2 -> nat -> unit -> nat -> nat
 
 Argument scopes are [_ _ nat_scope _ nat_scope]
 The reduction tactics unfold f when the 3rd, 4th and
   5th arguments evaluate to a constructor 
 f is transparent
-Expands to: Constant Top.S1.S2.f
+Expands to: Constant Top.f
 f : forall T2 : Type, T1 -> T2 -> nat -> unit -> nat -> nat
 
 Argument T2 is implicit
@@ -75,7 +75,7 @@ Argument scopes are [type_scope _ _ nat_scope _ nat_scope]
 The reduction tactics unfold f when the 4th, 5th and
   6th arguments evaluate to a constructor 
 f is transparent
-Expands to: Constant Top.S1.f
+Expands to: Constant Top.f
 f : forall T1 T2 : Type, T1 -> T2 -> nat -> unit -> nat -> nat
 
 Arguments T1, T2 are implicit

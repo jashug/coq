@@ -15,5 +15,3 @@ Section A.
 Coercion f (x : nat) : Prop := True.
 Print Coercion Paths nat Sortclass.
 
-Print Section A.
-

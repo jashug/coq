@@ -520,9 +520,9 @@ let export_private_constants ~in_section ce senv =
   let senv = List.fold_left (add_constant_aux no_section) senv bodies in
   (ce, exported), senv
 
-let add_constant dir l decl senv =
+let add_constant dir ~in_section l decl senv =
   let kn = Constant.make3 senv.modpath dir l in
-  let no_section = DirPath.is_empty dir in
+  let no_section = not in_section in
   let senv =
     let cb = 
       match decl with

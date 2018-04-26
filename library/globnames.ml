@@ -12,7 +12,6 @@ open CErrors
 open Names
 open Constr
 open Mod_subst
-open Libnames
 
 (*s Global reference is a kernel side type for all references together *)
 type global_reference = Names.global_reference =
@@ -230,18 +229,15 @@ let decode_con kn =
 
 (** Popping one level of section in global names.
     These functions are meant to be used during discharge:
-    user and canonical kernel names must be equal. *)
+    user and canonical kernel names must be equal.
+    We don't qualify by sections, so these are identity. *)
 
-let pop_con con =
-  let (mp,dir,l) = Constant.repr3 con in
-  Constant.make3 mp (pop_dirpath dir) l
+(* TODO: deprecate *)
 
-let pop_kn kn =
-  let (mp,dir,l) = MutInd.repr3 kn in
-  MutInd.make3 mp (pop_dirpath dir) l
+let pop_con con = con
+
+let pop_kn kn = kn
 
 let pop_global_reference = function
-  | ConstRef con -> ConstRef (pop_con con)
-  | IndRef (kn,i) -> IndRef (pop_kn kn,i)
-  | ConstructRef ((kn,i),j) -> ConstructRef ((pop_kn kn,i),j)
   | VarRef id -> anomaly (Pp.str "VarRef not poppable.")
+  | x -> x

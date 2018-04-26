@@ -1524,7 +1524,6 @@ Section LocalProperties.
 Variables T1 T2 T3 : Type.
 
 Variables (d1 : mem_pred T1) (d2 : mem_pred T2) (d3 : mem_pred T3).
-Local Notation ph := (phantom Prop).
 
 Definition prop_for (x : T1) P & ph {all1 P} := P x.
 

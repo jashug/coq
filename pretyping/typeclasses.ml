@@ -219,8 +219,8 @@ let discharge_class (_,cl) =
       List.smartmap (Option.smartmap Lib.discharge_global) grs
       @ newgrs
     in grs', discharge_rel_context subst 1 ctx @ ctx' in
-  let cl_impl' = Lib.discharge_global cl.cl_impl in
-  if cl_impl' == cl.cl_impl then cl else
+  if not (Lib.is_in_section cl.cl_impl) then cl else
+    let cl_impl' = Lib.discharge_global cl.cl_impl in
     let info = abs_context cl in
     let ctx = info.Lib.abstr_ctx in
     let ctx, subst = rel_of_variable_context ctx in
