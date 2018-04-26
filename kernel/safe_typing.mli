@@ -114,7 +114,7 @@ val export_private_constants : in_section:bool ->
 (** returns the main constant plus a list of auxiliary constants (empty
     unless one requires the side effects to be exported) *)
 val add_constant :
-  DirPath.t -> Label.t -> global_declaration ->
+  DirPath.t -> in_section:bool -> Label.t -> global_declaration ->
     Constant.t safe_transformer
 
 (** Adding an inductive type *)

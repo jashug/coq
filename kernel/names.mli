@@ -122,6 +122,8 @@ module ModIdmap : Map.ExtS with type key = module_ident and module Set := ModIds
 
 (** {6 Directory paths = section names paths } *)
 
+(* TODO: we don't use sections for names anymore, does this disappear? *)
+
 module DirPath :
 sig
   type t

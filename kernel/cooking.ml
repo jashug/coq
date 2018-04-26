@@ -15,7 +15,6 @@
 (* This module implements kernel-level discharching of local
    declarations over global constants and inductive types *)
 
-open CErrors
 open Util
 open Names
 open Term
@@ -26,18 +25,6 @@ open Univ
 module NamedDecl = Context.Named.Declaration
 
 (*s Cooking the constants. *)
-
-let pop_dirpath p = match DirPath.repr p with
-  | [] -> anomaly ~label:"dirpath_prefix" (Pp.str "empty dirpath.")
-  | _::l -> DirPath.make l
-
-let pop_mind kn =
-  let (mp,dir,l) = MutInd.repr3 kn in
-  MutInd.make3 mp (pop_dirpath dir) l
-
-let pop_con con =
-  let (mp,dir,l) = Constant.repr3 con in
-  Constant.make3 mp (pop_dirpath dir) l
 
 type my_global_reference =
   | ConstRef of Constant.t
@@ -70,15 +57,12 @@ let instantiate_my_gr gr u =
 let share cache r (cstl,knl) =
   try RefTable.find cache r
   with Not_found ->
-  let f,(u,l) =
+  let (u,l) =
     match r with
-    | IndRef (kn,i) ->
-	IndRef (pop_mind kn,i), Mindmap.find kn knl
-    | ConstructRef ((kn,i),j) ->
-	ConstructRef ((pop_mind kn,i),j), Mindmap.find kn knl
-    | ConstRef cst ->
-	ConstRef (pop_con cst), Cmap.find cst cstl in
-  let c = (f, (u, Array.map mkVar l)) in
+    | IndRef (kn,i) -> Mindmap.find kn knl
+    | ConstructRef ((kn,i),j) -> Mindmap.find kn knl
+    | ConstRef cst -> Cmap.find cst cstl in
+  let c = (r, (u, Array.map mkVar l)) in
   RefTable.add cache r c;
   c
 

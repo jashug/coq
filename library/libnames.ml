@@ -161,12 +161,11 @@ type object_name = full_path * KerName.t
 type object_prefix = {
   obj_dir : DirPath.t;
   obj_mp  : ModPath.t;
-  obj_sec : DirPath.t;
 }
 
 (* let make_oname (dirpath,(mp,dir)) id = *)
-let make_oname { obj_dir; obj_mp; obj_sec } id =
-  make_path obj_dir id, KerName.make obj_mp obj_sec (Label.of_id id)
+let make_oname { obj_dir; obj_mp } id =
+  make_path obj_dir id, KerName.make2 obj_mp (Label.of_id id)
 
 (* to this type are mapped DirPath.t's in the nametab *)
 type global_dir_reference =
@@ -177,7 +176,6 @@ type global_dir_reference =
 
 let eq_op op1 op2 =
   DirPath.equal op1.obj_dir op2.obj_dir &&
-  DirPath.equal op1.obj_sec op2.obj_sec &&
   ModPath.equal op1.obj_mp  op2.obj_mp
 
 let eq_global_dir_reference r1 r2 = match r1, r2 with

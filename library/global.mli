@@ -41,7 +41,7 @@ val export_private_constants : in_section:bool ->
   unit Entries.definition_entry * Safe_typing.exported_private_constant list
 
 val add_constant :
-  DirPath.t -> Id.t -> Safe_typing.global_declaration -> Constant.t
+  DirPath.t -> in_section:bool -> Id.t -> Safe_typing.global_declaration -> Constant.t
 val add_mind :
   DirPath.t -> Id.t -> Entries.mutual_inductive_entry -> MutInd.t
 

@@ -88,7 +88,7 @@ let cache_constant ((sp,kn), obj) =
       else CErrors.anomaly Pp.(str"Ex seff not found: " ++ Id.print(basename sp) ++ str".")
     | Some decl ->
       let () = check_exists sp in
-      Global.add_constant dir id decl
+      Global.add_constant dir ~in_section:(Lib.sections_are_opened ()) id decl
   in
   assert (Constant.equal kn' (Constant.make1 kn));
   Nametab.push (Nametab.Until 1) sp (ConstRef (Constant.make1 kn));
