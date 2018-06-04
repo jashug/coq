@@ -61,9 +61,6 @@ type structured_one_inductive_expr = {
   ind_lc : (Id.t * constr_expr) list
 }
 
-type structured_inductive_expr =
-  local_binder_expr list * structured_one_inductive_expr list
-
 let minductive_message warn = function
   | []  -> user_err Pp.(str "No inductive definition.")
   | [x] -> (Id.print x ++ str " is defined" ++

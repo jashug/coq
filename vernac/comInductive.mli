@@ -10,9 +10,7 @@
 
 open Names
 open Entries
-open Libnames
 open Vernacexpr
-open Constrexpr
 open Decl_kinds
 
 (** {6 Inductive and coinductive types} *)
@@ -39,29 +37,3 @@ type one_inductive_impls =
 val declare_mutual_inductive_with_eliminations :
   mutual_inductive_entry -> UnivNames.universe_binders -> one_inductive_impls list ->
   MutInd.t
-
-(** Exported for Funind *)
-
-(** Extracting the semantical components out of the raw syntax of mutual
-   inductive declarations *)
-
-type structured_one_inductive_expr = {
-  ind_name : Id.t;
-  ind_univs : universe_decl_expr option;
-  ind_arity : constr_expr;
-  ind_lc : (Id.t * constr_expr) list
-}
-
-type structured_inductive_expr =
-  local_binder_expr list * structured_one_inductive_expr list
-
-val extract_mutual_inductive_declaration_components :
-  (one_inductive_expr * decl_notation list) list ->
-    structured_inductive_expr * (*coercions:*) qualid list * decl_notation list
-
-(** Typing mutual inductive definitions *)
-
-val interp_mutual_inductive :
-  structured_inductive_expr -> decl_notation list -> cumulative_inductive_flag ->
-  polymorphic -> private_flag -> Declarations.recursivity_kind ->
-  mutual_inductive_entry * UnivNames.universe_binders * one_inductive_impls list
