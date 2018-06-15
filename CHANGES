@@ -45,6 +45,13 @@ Vernacular Commands
 - Added option Uniform Inductive Parameters which abstracts over parameters
   before typechecking constructors, allowing to write for example
   `Inductive list (A : Type) := nil : list | cons : A -> list -> list.`
+- Strengthened inference of conclusions of inductive constructors.
+  Inference of arguments no longer assumes that implicit parameters
+  are uniform. This is a source of incompatibilites. If Coq fails
+  to infer the values of some parameters, either specify those parameters
+  explicitly, or wrap the inductive in a section to abstract the uniform
+  parameters (both of which are backwards compatible), or set the
+  Uniform Inductive Parameters option referenced above.
 
 Coq binaries and process model
 
