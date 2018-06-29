@@ -29,7 +29,7 @@ val interp_known_glob_level : ?loc:Loc.t -> Evd.evar_map ->
 val search_guard :
   ?loc:Loc.t -> env -> int list list -> Constr.rec_declaration -> int array
 
-type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
+type typing_constraint = OfType of types | IsType | OfSort of ESorts.t | WithoutTypeConstraint
 
 type inference_hook = env -> evar_map -> Evar.t -> evar_map * constr
 

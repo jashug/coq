@@ -120,6 +120,9 @@ val interp_casted_constr_evars : env -> evar_map ->
 val interp_type_evars : env -> evar_map ->
   ?impls:internalization_env -> constr_expr -> evar_map * types
 
+val interp_casted_type_evars : env -> evar_map ->
+  ?impls:internalization_env -> constr_expr -> ESorts.t -> evar_map * types
+
 (** Accepting unresolved evars and giving back the manual implicit arguments *)
 
 val interp_constr_evars_impls : env -> evar_map ->
@@ -132,6 +135,10 @@ val interp_casted_constr_evars_impls : env -> evar_map ->
 
 val interp_type_evars_impls : env -> evar_map ->
   ?impls:internalization_env -> constr_expr ->
+  evar_map * (types * Impargs.manual_implicits)
+
+val interp_casted_type_evars_impls : env -> evar_map ->
+  ?impls:internalization_env -> constr_expr -> ESorts.t ->
   evar_map * (types * Impargs.manual_implicits)
 
 (** Interprets constr patterns *)

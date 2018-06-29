@@ -2218,7 +2218,7 @@ let extract_ids env =
     Id.Set.empty
 
 let scope_of_type_kind sigma = function
-  | IsType -> Notation.current_type_scope_name ()
+  | IsType | OfSort _ -> Notation.current_type_scope_name ()
   | OfType typ -> compute_type_scope sigma typ
   | WithoutTypeConstraint -> None
 
@@ -2275,7 +2275,11 @@ let interp_open_constr env sigma c =
 let interp_constr_evars_gen_impls env sigma
     ?(impls=empty_internalization_env) expected_type c =
   let c = intern_gen expected_type ~impls env sigma c in
-  let imps = Implicit_quantifiers.implicits_of_glob_constr ~with_products:(expected_type == IsType) c in
+  let with_products = match expected_type with
+    | IsType | OfSort _ -> true
+    | WithoutTypeConstraint | OfType _ -> false
+  in
+  let imps = Implicit_quantifiers.implicits_of_glob_constr ~with_products c in
   let sigma, c = understand_tcc env sigma ~expected_type c in
   sigma, (c, imps)
 
@@ -2287,6 +2291,9 @@ let interp_casted_constr_evars_impls env evdref ?(impls=empty_internalization_en
 
 let interp_type_evars_impls env sigma ?(impls=empty_internalization_env) c =
   interp_constr_evars_gen_impls env sigma ~impls IsType c
+
+let interp_casted_type_evars_impls env sigma ?(impls=empty_internalization_env) c s =
+  interp_constr_evars_gen_impls env sigma ~impls (OfSort s) c
 
 (* Not all evars expected to be resolved, with side-effect on evars *)
 
@@ -2302,6 +2309,9 @@ let interp_casted_constr_evars env sigma ?(impls=empty_internalization_env) c ty
 
 let interp_type_evars env sigma ?(impls=empty_internalization_env) c =
   interp_constr_evars_gen env sigma IsType ~impls c
+
+let interp_casted_type_evars env sigma ?(impls=empty_internalization_env) c s =
+  interp_constr_evars_gen env sigma (OfSort s) ~impls c
 
 (* Miscellaneous *)
 

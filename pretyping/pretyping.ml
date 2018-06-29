@@ -49,7 +49,7 @@ open Ltac_pretype
 
 module NamedDecl = Context.Named.Declaration
 
-type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
+type typing_constraint = OfType of types | IsType | OfSort of ESorts.t | WithoutTypeConstraint
 
 (************************************************************************)
 (* This concerns Cases *)
@@ -1184,6 +1184,9 @@ let ise_pretype_gen flags env sigma lvar kind c =
         j.uj_val, j.uj_type
     | IsType ->
         let tj = pretype_type k0 flags.use_typeclasses empty_valcon env evdref lvar c in
+        tj.utj_val, mkSort tj.utj_type
+    | OfSort s ->
+        let tj = pretype_type k0 flags.use_typeclasses (mk_tycon (of_kind (Constr.Sort s))) env evdref lvar c in
         tj.utj_val, mkSort tj.utj_type
   in
   process_inference_flags flags env.ExtraEnv.env sigma (!evdref,c',c'_ty)
