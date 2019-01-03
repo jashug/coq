@@ -179,7 +179,7 @@ let print_primproj_compatibility_value = ref false
 let print_primproj_compatibility () = !print_primproj_compatibility_value
 
 let () = declare_bool_option
-	  { optdepr  = false;
+          { optdepr  = true;
 	    optname  = "backwards-compatible printing of primitive projections";
 	    optkey   = ["Printing";"Primitive";"Projection";"Compatibility"];
 	    optread  = print_primproj_compatibility;
