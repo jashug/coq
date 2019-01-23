@@ -74,19 +74,17 @@ let rename_type ty ref =
     match override with
     | Name _ as x -> x
     | Anonymous -> old_name in
-  let rec rename_type_aux c = function
-    | [] -> c
-    | rename :: rest as renamings ->
-        match kind_of_type c with
-        | ProdType (old, s, t) ->
-            mkProd (name_override old rename, s, rename_type_aux t rest)
-        | LetInType(old, s, b, t) ->
-            mkLetIn (old ,s, b, rename_type_aux t renamings)
-        | CastType (t,_) -> rename_type_aux t renamings
-        | SortType _ -> c
-        | AtomicType _ -> c in
-  try rename_type_aux ty (arguments_names ref)
-  with Not_found -> ty
+  let rec rename_type_aux c renamings =
+    let rename,rest = match renamings with [] -> Anonymous,[] | rename :: rest -> rename,rest in
+    match kind_of_type c with
+    | ProdType (old, s, t) ->
+       mkProd (name_override old rename, s, rename_type_aux t rest)
+    | LetInType(old, s, b, t) ->
+       mkLetIn (old ,s, b, rename_type_aux t renamings)
+    | CastType (t,_) -> rename_type_aux t renamings
+    | SortType _ -> c
+    | AtomicType _ -> c in
+  rename_type_aux ty (try arguments_names ref with Not_found -> [])
 
 let rename_type_of_constant env c =
   let ty = Typeops.type_of_constant_in env c in
